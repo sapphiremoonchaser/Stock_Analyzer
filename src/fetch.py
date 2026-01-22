@@ -17,9 +17,10 @@ def get_stock_info(
     :param tickers (str or list[str]): tickers to fetch 
     :return (dict): 
     """
-    # Normalize the case of the tickers
+    # If tickers is a str then uppercase it and turn it into a list with one element
     if isinstance(tickers, str):
         tickers = [tickers.upper()]
+    # If tickers can be iterated uppercase all elements
     else:
         tickers = [t.upper() for t in tickers]
 
@@ -34,6 +35,7 @@ def get_stock_info(
                 result[ticker] = {"error": "No data returned"}
                 continue
 
+            # Create a dict from the info object
             result[ticker] = {
                 "name": info.get("longName"),
                 "price": info.get("currentPrice"),
