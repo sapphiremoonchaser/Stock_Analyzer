@@ -1,8 +1,11 @@
+from http.client import responses
 from typing import (
     List,
     Union
 )
 import yfinance as yf
+import requests
+from bs4 import BeautifulSoup
 
 # Alias to make return type easier to read and reuse
 StockInfo = dict[str, Union[str, float, int]]
@@ -54,3 +57,27 @@ def get_stock_info(
             result[ticker] = {"error": str(e)}
 
     return result
+
+
+def get_yahoo_peers(
+        ticker: str,
+        max_peers: int=5
+) -> List[str]:
+    """
+    Scrape Yahoo Finance Peers section for competitor tickers.
+    returns a list of up to max_peers tickers (excluding the input one).
+
+    Note: Web scraping can break if Yahoo's layout changes
+    returns empty list on failure.
+    :param ticker: the ticker whose competitors you want to find
+    :param max_peers: max competitors you want
+    :return: List of competitors for the input ticker
+    """
+    ticker = ticker.upper()
+    url = f"https://finance.yahoo.com/quote/{ticker}/peers"
+
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+        response = requests.get(url, headers=headers)
