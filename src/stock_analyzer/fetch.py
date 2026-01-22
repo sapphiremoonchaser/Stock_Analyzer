@@ -191,16 +191,16 @@ def compare_with_competitors(
         row = {
             "ticker": ticker,
             "name": info.get("name", "N/A"),
-            "price": info.get("currentPrice"),
+            "price": info.get("price"),
             "industry": info.get("industry"),
             "sector": info.get("sector"),
-            "dividend_yield": info.get("dividendYield"),
-            "trailing_pe": info.get("trailingPE"),
-            "forward_pe": info.get("forwardPE"),
-            "average_volume": info.get("averageVolume"),
-            "market_cap": info.get("marketCap"),
-            "enterprise_value": info.get("enterpriseValue"),
-            "price_to_book": info.get("priceToBook")
+            "dividend_yield": info.get("dividend_yield"),
+            "trailing_pe": info.get("trailing_pe"),
+            "forward_pe": info.get("forward_pe"),
+            "average_volume": info.get("average_volume"),
+            "market_cap": info.get("market_cap"),
+            "enterprise_value": info.get("enterprise_value"),
+            "price_to_book": info.get("price_to_book")
         }
         if include_summary:
             row["summary"] = info.get("summary", "N/A")
