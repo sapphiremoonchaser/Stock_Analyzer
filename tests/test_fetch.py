@@ -7,13 +7,13 @@ def test_get_stock_info_single_valid_ticker():
     # Test return type
     assert isinstance(result, dict)
 
-    # Test that the requeted ticker is in the returned dict
-    # assert 'AAPL' in result
-    #
-    # info = result['AAPL']
-    #
-    # assert "error" not in info
-    #
+    # Test that the requested ticker is in the returned dict
+    assert 'AAPL' in result
+
+    info = result['AAPL']
+
+    assert "error" not in info
+
     # # Test attribute types
     # assert isinstance(info["name"], str)
     # assert isinstance(info["price"], (int, float, type(None)))
