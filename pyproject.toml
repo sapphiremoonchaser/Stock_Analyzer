@@ -1,0 +1,30 @@
+[project]
+name = "stock_analyzer"
+version = "1.0.0"
+description = "Stock analysis tool using yfinance and visualization libraries"
+readme = "README.md"           # optional but recommended
+requires-python = ">=3.12"      # or >=3.10, >=3.11 — pick what you actually support
+dependencies = [
+    "yfinance >= 0.2.40",      # current real version range
+    "pandas >= 2.2.0",
+    "matplotlib >= 3.8.0",
+    "seaborn >= 0.13.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+#    "ruff",           # or black, isort, etc.
+     "ipykernel",    # if you use Jupyter
+]
+
+[build-system]
+requires = [
+    "setuptools >= 65.0",     # modern minimum, supports editable installs well
+    "wheel >= 0.37",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+# namespaces = false   # uncomment if needed
