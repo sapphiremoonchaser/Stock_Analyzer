@@ -37,3 +37,10 @@ def test_get_stock_info_multiple_tickers():
     assert isinstance(result["MSFT"]['name'], str)
 
 
+@pytest.mark.parametrize("bad_ticker", ["INVALIDTICKER123", ""])
+def test_get_stock_info_invalid_ticker(bad_ticker):
+    result = get_stock_info(bad_ticker)
+
+    assert isinstance(result, dict)
+    assert bad_ticker.upper() in result or bad_ticker in result
+    assert "error" in result.get(bad_ticker.upper(), {}) or "error" in result.get(bad_ticker, {})
