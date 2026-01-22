@@ -80,4 +80,34 @@ def get_yahoo_peers(
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         }
-        response = requests.get(url, headers=headers)
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=10
+        )
+
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        # Find the peers table or list - selector
+        # May need occassional update
+        # Look for table rows in the competitors/peers section
+        peer_rows = soup.select("table tbody tr")
+
+        peers = []
+        for row in peer_rows:
+            cells = row.find_all("td")
+            if len(cells) >= 2:
+                peer_ticker_tag = cells[0].find("a") or cells[0].find("span")
+                if peer_ticker_tag and peer_ticker_tag.text.strip():
+                    peer_ticker = peer_ticker_tag.text.strip().upper()
+                    if peer_ticker != ticker and peer_ticker not in peers:
+                        peers.append(peer_ticker)
+                        if len(peers) >= max_peers:
+                            break
+
+        return peers
+
+    except Exception as e:
+        print(f"Error fetching peers for {ticker}: {e}")
+        return []
+

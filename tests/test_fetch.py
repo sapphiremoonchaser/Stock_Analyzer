@@ -1,5 +1,5 @@
 import pytest
-from src.fetch import get_stock_info
+from stock_analyzer.fetch import get_stock_info
 
 def test_get_stock_info_single_valid_ticker():
     result = get_stock_info('AAPL')
