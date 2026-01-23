@@ -1,7 +1,3 @@
-import re
-from email.contentmanager import raw_data_manager
-from http.client import responses
-from operator import ifloordiv
 from typing import (
     List,
     Union,
@@ -11,9 +7,7 @@ import yfinance as yf
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
-from fontTools.misc.cython import returns
-from fontTools.ttLib.tables.otTraverse import dfs_base_table
-from numpy.ma.extras import row_stack
+from stock_analyzer.fetch_estab_year import get_founding_date
 
 # Alias to make return type easier to read and reuse
 StockInfo = dict[str, Union[str, float, int]]
@@ -53,7 +47,7 @@ def get_stock_info(
                 "price": info.get("currentPrice"),
                 "industry": info.get("industry"),
                 "sector": info.get("sector"),
-                "established": get_founded_year(ticker, info.get("longName", None)),
+                "established": get_founding_date(ticker, info.get("longName")),
                 "dividend_yield": info.get("dividendYield"),
                 "trailing_pe": info.get("trailingPE"),
                 "forward_pe": info.get("forwardPE"),
@@ -183,6 +177,7 @@ def compare_with_competitors(
                 "price": None,
                 "industry": "N/A",
                 "sector": "N/A",
+                "established": "N/A",
                 "dividend_yield": None,
                 "trailing_pe": None,
                 "forward_pe": None,
@@ -199,6 +194,7 @@ def compare_with_competitors(
             "price": info.get("price"),
             "industry": info.get("industry"),
             "sector": info.get("sector"),
+            "established": info.get("established", "N/A"),
             "dividend_yield": info.get("dividend_yield"),
             "trailing_pe": info.get("trailing_pe"),
             "forward_pe": info.get("forward_pe"),
@@ -269,103 +265,3 @@ def compare_with_competitors(
 
     return df
 
-
-def get_founded_year(
-        ticker: str,
-        company_name: str = None
-) -> int | str:
-    """
-    Try to find the founding/established year via Wikipedia infobox.
-    Falls back to parsing yfinance summary text if possible.
-    :param ticker: Ticker to find the founded/established year.
-    :param company_name: Company name that goes with the ticker
-    :return: integer year or "N/A"
-    """
-    try:
-        # Use company name from yfinance if provided, else guess from ticker
-        if not company_name:
-            company_name = ticker.upper() # Fallback, will be improved below
-
-        # # Clean name for Wikipedia URL (replace spaces with _, remove Inc./Corp/etc)
-        # wiki_name = re.sub(
-        #     r'\s+(Inc\.|Corp\,|Co\,|Holdings|Limited|Ltd\.?|PLC)$',
-        #     '',
-        #     company_name,
-        #     flags=re.IGNORECASE
-        # )
-        # wiki_name = wiki_name.strip().replace(' ', '_').replace('&', '%26')
-
-        # Better cleaning: remove trailing legal suffixes only if they cause issues, but prefer keeping "Inc." for many companies
-        # First try with full name (replacing spaces with _)
-        wiki_name = company_name.strip().replace(" ", "_").replace("&", "%26").replace(".", "")  # temp remove dots
-
-        # Common suffixes that are usually part of the title
-        suffixes_to_try = ["", "_Inc", "_Inc.", "_Corporation", "_Co", "_Ltd"]
-
-        found_url = False
-        founded_year = "N/A"
-
-        for suffix in suffixes_to_try:
-            test_name = wiki_name + suffix
-            url = f"https://en.wikipedia.org/wiki/{test_name}"
-            try:
-                response = requests.get(url, headers=headers, timeout=8)
-                if response.status_code == 200:
-                    soup = BeautifulSoup(response.text, "html.parser")
-                    # Quick check if it's actually the company page (has infobox)
-                    if soup.find("table", class_="infobox"):
-                        # Now extract founded year as before
-                        infobox = soup.find("table", class_="infobox")
-                        founded_label = infobox.find("th", string=re.compile(r"Founded|Established|Incorporated", re.I))
-                        if founded_label:
-                            founded_cell = founded_label.find_next("td")
-                            if founded_cell:
-                                text = founded_cell.get_text(strip=True)
-                                years = re.findall(r"\b(19\d{2}|20\d{2})\b", text)
-                                if years:
-                                    founded_year = int(min(years))  # earliest year
-                                    found_url = True
-                                    break
-            except:
-                continue
-
-        if not found_url:
-            # Last ditch: try direct search-like fallback or summary parse
-            pass  # keep your existing fallback
-
-        url = f"https://en.wikipedia.org/wiki/{wiki_name}"
-        headers = {"User-Agent": "StockAnalyzer/1.0 (your.email@example.com)"}
-        response = requests.get(url, headers=headers, timeout=10)
-
-        if response.status_code != 200:
-            # Try direct ticker/company fallback
-            response = requests.get(f"https://en.wikipedia.org/wiki/{ticker}", headers=headers, timeout=8)
-            if response.status_code != 200:
-                raise ValueError("Wikipedia page not found")
-
-        soup = BeautifulSoup(response.text, "html.parser")
-
-        # Find infobox
-        infobox = soup.find("table", class_="infobox")
-        if not infobox:
-            raise ValueError("No Infobox Found")
-
-        # Look for "Founded" row
-        founded_label = infobox.find("th", string=re.compile(r"Founded|Established|Incorporated", re.I))
-        if founded_label:
-            founded_cell = founded_label.find_next("td")
-            if founded_cell:
-                text = founded_cell.get_text(strip=True)
-                # Extract 4-digit year (usually the last one or first one)
-                years = re.findall(r"\b(19\d{2}|20\d{2})\b", text)
-                if years:
-                    # Take the earliest year (founding, not re-incorporation)
-                    return int(min(years))
-
-        # Fallback: parse yfinance summary if we have it
-        # (you can pass it in later if you want to avoid duplicate calls)
-        return "N/A"
-
-    except Exception as e:
-        print(f"Could not get founded year for {ticker}: {e}")
-        return "N/A"

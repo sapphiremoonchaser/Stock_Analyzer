@@ -1,3 +1,8 @@
-from stock_analyzer.fetch import get_stock_info
+from stock_analyzer.fetch import compare_with_competitors
 
-print(get_stock_info('AAPL')['AAPL']['established'])
+df = compare_with_competitors(
+    'AAPL',
+    max_competitors=4
+)
+
+print(df[['name', 'established']])
