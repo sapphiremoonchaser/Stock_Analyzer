@@ -229,19 +229,19 @@ def compare_with_competitors(
     # Trailing PE as 2 decimals
     if "trailing_pe" in df.columns:
         df['trailing_pe'] = df['trailing_pe'].apply(
-            lambda x: f"{x:.2f}%" if pd.notnull(x) and x > 0 else "N/A"
+            lambda x: f"{x:.2f}" if pd.notnull(x) and x > 0 else "N/A"
         )
 
     # Forward PE as 2 decimals
     if "forward_pe" in df.columns:
         df['forward_pe'] = df['forward_pe'].apply(
-            lambda x: f"{x:.2f}%" if pd.notnull(x) and x > 0 else "N/A"
+            lambda x: f"{x:.2f}" if pd.notnull(x) and x > 0 else "N/A"
         )
 
     # Average Volume in thousands
     if "average_volume" in df.columns:
         df['average_volume'] = df['average_volume'].apply(
-            lambda x: f"{x:,.0f}%" if pd.notnull(x) and x > 0 else "N/A"
+            lambda x: f"{x:,.0f}" if pd.notnull(x) and x > 0 else "N/A"
         )
 
     # Market Cap in Billions

@@ -2,7 +2,7 @@ from stock_analyzer.fetch import compare_with_competitors
 
 # Test with one ticker
 df = compare_with_competitors(
-    "WMT",
+    "MTDR",
     max_competitors=4
 )
 
