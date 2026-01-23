@@ -1,8 +1,6 @@
 from stock_analyzer.fetch import compare_with_competitors
+from stock_analyzer.fetch_estab_year import get_founding_date
 
-df = compare_with_competitors(
-    'AAPL',
-    max_competitors=4
-)
+date = get_founding_date('TSLA')
 
-print(df[['name', 'established']])
+print("Returned:", date)

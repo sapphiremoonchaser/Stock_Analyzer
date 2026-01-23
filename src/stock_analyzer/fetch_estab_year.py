@@ -1,43 +1,63 @@
 import json
-import os
 import re
 import requests
 from bs4 import BeautifulSoup
+from pathlib import Path
 
-CACHE_DIR = "data"
-CACHE_FILE = os.path.join(CACHE_DIR, "founding_date_cache.json")
+# Make paths relative to THIS FILE's location → reliable no matter how you run it
+THIS_FILE = Path(__file__).resolve()
+PROJECT_ROOT = THIS_FILE.parents[1]          # assumes file is in src/ → root is one level up
+CACHE_DIR = PROJECT_ROOT / "data"
+CACHE_FILE = CACHE_DIR / "established_cache.json"
 
 
 def load_founding_cache() -> dict:
-    if not os.path.exists(CACHE_FILE):
+    if not CACHE_FILE.exists():
         return {}
     try:
-        with open(CACHE_FILE, 'r', encoding='utf-8') as f:
+        with CACHE_FILE.open('r', encoding='utf-8') as f:
             return json.load(f)
-    except:
-        print("Warning: founding cache corrupt. Starting fresh.")
+    except Exception as e:
+        print(f"Warning: established cache corrupt or unreadable ({e}). Starting fresh.")
         return {}
 
 
 def save_founding_cache(cache: dict):
-    os.makedirs(CACHE_DIR, exist_ok=True)
-    with open(CACHE_FILE, 'w', encoding='utf-8') as f:
-        json.dump(cache, f, indent=2, ensure_ascii=False)
-    print(f"Saved founding date cache ({len(cache)} entries)")
+    print(f"[SAVE DEBUG] Starting save to {CACHE_FILE}")
+    print(f"[SAVE DEBUG] Data to save: {cache}")
+
+    try:
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        print(f"[SAVE DEBUG] Directory ensured: {CACHE_DIR.exists()} ({CACHE_DIR.absolute()})")
+
+        with CACHE_FILE.open('w', encoding='utf-8') as f:
+            json.dump(cache, f, indent=2, ensure_ascii=False)
+            f.flush()  # force disk write
+            os.fsync(f.fileno())  # even stronger on some systems
+
+        print(f"[SAVE DEBUG] Save finished. File exists? {CACHE_FILE.exists()}")
+        if CACHE_FILE.exists():
+            print(f"[SAVE DEBUG] File size after write: {CACHE_FILE.stat().st_size} bytes")
+        else:
+            print("[SAVE DEBUG] File STILL does not exist after write attempt!")
+    except Exception as e:
+        print(f"[SAVE ERROR] Failed to write cache: {type(e).__name__}: {e}")
+        print(f"[SAVE ERROR] Full path attempted: {CACHE_FILE.absolute()}")
 
 
-def get_founding_date(ticker: str, company_name: str = None) -> str:
-    """
-    Get founding/establishment date as a string (e.g. "1976" or "April 1, 1976").
-    Uses Wikipedia infobox with caching.
-    Returns "N/A" on failure.
-    """
+def get_founding_date(
+    ticker: str,
+    company_name: str = None
+) -> str:
     ticker = ticker.upper()
     cache = load_founding_cache()
 
     if ticker in cache:
-        print(f"Cache hit for {ticker}: {cache[ticker]}")
+        print(f"[CACHE DEBUG] Hit: {ticker} -> {cache[ticker]}")
         return cache[ticker]
+
+    print(f"[CACHE DEBUG] Miss for {ticker}. Starting scrape.")
+    founding_date = "N/A"  # default
 
     try:
         if not company_name:
@@ -94,12 +114,26 @@ def get_founding_date(ticker: str, company_name: str = None) -> str:
             except:
                 continue
 
-        cache[ticker] = founding_date
-        save_founding_cache(cache)
-        return founding_date
+        print(f"[CACHE DEBUG] Scraped date: '{founding_date}' for {ticker}")
 
-    except Exception as e:
-        print(f"Failed for {ticker}: {e}")
+        # FORCE assign to cache
+        cache[ticker] = founding_date
+        print(f"[CACHE DEBUG] Cache updated in memory: {ticker} = {cache[ticker]}")
+        print(f"[CACHE DEBUG] Full cache dict now: {cache}")
+
+        # FORCE call save
+        print("[CACHE DEBUG] Calling save_founding_cache NOW")
+        save_founding_cache(cache)
+        print("[CACHE DEBUG] save_founding_cache returned successfully")
+
+    except Exception as exc:
+        print(f"[CACHE DEBUG] EXCEPTION during scrape/save for {ticker}: {type(exc).__name__}: {exc}")
+        # Still try to save failure
         cache[ticker] = "N/A"
         save_founding_cache(cache)
-        return "N/A"
+
+    # One final force-save attempt at the very end
+    print("[CACHE DEBUG] Final force-check before return")
+    save_founding_cache(cache)  # <--- this should almost always run
+
+    return founding_date
