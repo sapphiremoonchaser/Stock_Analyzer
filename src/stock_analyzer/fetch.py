@@ -286,14 +286,52 @@ def get_founded_year(
         if not company_name:
             company_name = ticker.upper() # Fallback, will be improved below
 
-        # Clean name for Wikipedia URL (replace spaces with _, remove Inc./Corp/etc)
-        wiki_name = re.sub(
-            r'\s+(Inc\.|Corp\,|Co\,|Holdings|Limited|Ltd\.?|PLC)$',
-            '',
-            company_name,
-            flags=re.IGNORECASE
-        )
-        wiki_name = wiki_name.strip().replace(' ', '_').repalce('&', '%26')
+        # # Clean name for Wikipedia URL (replace spaces with _, remove Inc./Corp/etc)
+        # wiki_name = re.sub(
+        #     r'\s+(Inc\.|Corp\,|Co\,|Holdings|Limited|Ltd\.?|PLC)$',
+        #     '',
+        #     company_name,
+        #     flags=re.IGNORECASE
+        # )
+        # wiki_name = wiki_name.strip().replace(' ', '_').replace('&', '%26')
+
+        # Better cleaning: remove trailing legal suffixes only if they cause issues, but prefer keeping "Inc." for many companies
+        # First try with full name (replacing spaces with _)
+        wiki_name = company_name.strip().replace(" ", "_").replace("&", "%26").replace(".", "")  # temp remove dots
+
+        # Common suffixes that are usually part of the title
+        suffixes_to_try = ["", "_Inc", "_Inc.", "_Corporation", "_Co", "_Ltd"]
+
+        found_url = False
+        founded_year = "N/A"
+
+        for suffix in suffixes_to_try:
+            test_name = wiki_name + suffix
+            url = f"https://en.wikipedia.org/wiki/{test_name}"
+            try:
+                response = requests.get(url, headers=headers, timeout=8)
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, "html.parser")
+                    # Quick check if it's actually the company page (has infobox)
+                    if soup.find("table", class_="infobox"):
+                        # Now extract founded year as before
+                        infobox = soup.find("table", class_="infobox")
+                        founded_label = infobox.find("th", string=re.compile(r"Founded|Established|Incorporated", re.I))
+                        if founded_label:
+                            founded_cell = founded_label.find_next("td")
+                            if founded_cell:
+                                text = founded_cell.get_text(strip=True)
+                                years = re.findall(r"\b(19\d{2}|20\d{2})\b", text)
+                                if years:
+                                    founded_year = int(min(years))  # earliest year
+                                    found_url = True
+                                    break
+            except:
+                continue
+
+        if not found_url:
+            # Last ditch: try direct search-like fallback or summary parse
+            pass  # keep your existing fallback
 
         url = f"https://en.wikipedia.org/wiki/{wiki_name}"
         headers = {"User-Agent": "StockAnalyzer/1.0 (your.email@example.com)"}
