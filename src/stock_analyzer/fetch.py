@@ -222,7 +222,7 @@ def compare_with_competitors(
 
     # Dividend Yield in percentage 0 decimals
     if "dividend_yield" in df.columns:
-        df['dividen_yield'] = df['dividend_yield'].apply(
+        df['dividend_yield'] = df['dividend_yield'].apply(
             lambda x: f"{x:.0f}%" if pd.notnull(x) and x > 0 else "N/A"
         )
 
