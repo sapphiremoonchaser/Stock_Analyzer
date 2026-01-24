@@ -1,6 +1,6 @@
 from stock_analyzer.fetch import compare_with_competitors
 
-main_ticker = 'MTDR'
+main_ticker = 'WMT'
 
 # Test with one ticker
 df = compare_with_competitors(
